@@ -1,0 +1,63 @@
+version: "3.8"
+services:
+  server:
+    build:
+      context: ./server
+      dockerfile: ../dockerfiles/backend.dockerfile
+      args:
+        NODE_VERSION: 20
+    depends_on:
+      - database
+    ports:
+      - "3020:8080"
+      - "3050:8080"
+      - "8080:8080"
+    environment:
+      - NODE_ENV=production
+      - PORT=8080
+      - MONGO_URI=mongodb://database:27017/MERN
+    volumes:
+      - ./server:/backend
+      - ./server/node_modules:/backend/node_modules
+  database:
+    image: mongo:8.0.10-noble
+    restart: always
+    ports:
+      - "27017:27017"
+    volumes:
+      - db_data:/data/db
+  frontend:
+    build:
+      context: ./client
+      dockerfile: ../dockerfiles/frontend.dockerfile
+    depends_on:
+      - database
+    ports:
+      - "4000:3000"
+      - "4050:3000"
+      - "4100:3000"
+    volumes:
+      - ./client:/frontend
+      - ./client/node_modules:/frontend/node_modules
+  client_npm:
+    build: 
+      context: ./client
+      dockerfile: ../dockerfiles/npm.dockerfile
+      args:
+        - WORKDIR_NAME=/frontend
+    environment:
+      - WORKDIR_NAME_ENV=/frontend
+    volumes:
+      - ./client:/frontend
+  server_npm:
+    build: 
+      context: ./server
+      dockerfile: ../dockerfiles/npm.dockerfile
+      args:
+        - WORKDIR_NAME=/backend
+    environment:
+      - WORKDIR_NAME_ENV=/backend
+    volumes:
+      - ./server:/backend
+volumes:
+  db_data:
